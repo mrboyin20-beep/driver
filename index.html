@@ -1,0 +1,615 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#071b2b">
+<title>Where Is My Bus | Driver App</title>
+<style>
+:root{--bg:#071b2b;--panel:#102b3d;--green:#25d69a;--blue:#55b8ff;--red:#ff6575;--border:#29495b;--muted:#a9bdca}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(145deg,#071b2b,#102f40);color:#f3f8fc;font-family:Arial,sans-serif;min-height:100vh}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+header{position:sticky;top:0;z-index:5;background:#071b2bf2;border-bottom:1px solid var(--border);padding:15px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.brand{font-size:18px;font-weight:800}.brand span{color:var(--green)}
+main{width:min(900px,100%);margin:auto;padding:18px}
+.card{background:linear-gradient(150deg,var(--panel),#0d2637);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 12px 28px #0002}
+h1{font-size:25px;margin:0 0 8px}h2{font-size:19px;margin:0 0 14px}
+p{line-height:1.55}.muted,.notice{color:var(--muted);font-size:13px;line-height:1.6}
+label{display:block;margin:13px 0 6px;font-size:14px;color:#d7e7ef}
+input,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:#071b2b;color:white;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+textarea{resize:vertical;min-height:72px}
+.grid,.statgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.btn{border:0;border-radius:11px;padding:12px 15px;font-weight:700;background:var(--green);color:#06251c}
+.btn.secondary{background:#24495f;color:white;border:1px solid #3a6278}
+.btn.danger{background:#612d3a;color:white}.btn.blue{background:#1c5b86;color:white}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.actions .btn{flex:1}
+.pill{display:inline-block;border-radius:30px;padding:6px 10px;font-size:12px;background:#24465a;color:#cfe7f3}
+.status{padding:12px;border-radius:11px;background:#0a1e2c;border:1px solid var(--border);margin:12px 0;line-height:1.5}
+.stat{padding:12px;border-radius:12px;background:#0a1e2c;overflow-wrap:anywhere}
+.stat strong{display:block;margin-top:6px}
+.stop-item{display:flex;gap:7px;align-items:center;margin:8px 0}
+.stop-item input{flex:1;min-width:0}.stop-item button{padding:9px;border:1px solid var(--border);border-radius:8px;background:#18394c;color:white}
+
+.timing-card{
+  background:linear-gradient(135deg,#10384a,#10283b);
+  border:1px solid #326176;
+  border-radius:16px;
+  padding:15px;
+  margin:16px 0;
+}
+.timing-heading{
+  font-size:15px;
+  font-weight:800;
+  margin-bottom:10px;
+  color:#e9f8ff;
+}
+.timing-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.timing-box{
+  background:#071b2b;
+  border:1px solid #29495b;
+  padding:12px;
+  border-radius:12px;
+}
+.timing-box label{
+  margin:0 0 8px;
+  font-size:13px;
+  color:#b9d4e3;
+}
+.timing-box input{
+  border-color:#326176;
+  font-size:16px;
+  font-weight:700;
+}
+.timing-note{
+  font-size:12px;
+  line-height:1.5;
+  color:#a9bdca;
+  margin:10px 0 0;
+}
+@media(max-width:560px){
+  .timing-grid{grid-template-columns:1fr}
+}
+
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#e8fff6;color:#063d2c;padding:12px 16px;border-radius:12px;z-index:20;max-width:90%;box-shadow:0 8px 25px #0005}
+footer{text-align:center;padding:16px;color:var(--muted);font-size:12px}
+@media(max-width:560px){main{padding:12px}.card{padding:15px}.grid,.statgrid{grid-template-columns:1fr}h1{font-size:22px}.brand{font-size:16px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">🚌 Where Is <span>My Bus</span></div>
+  <span id="headerState" class="pill">Driver App</span>
+</header>
+
+<main>
+  <section id="splash" class="card">
+    <p class="pill">WEST SINGHBHUM · JHARKHAND</p>
+    <h1>आपकी बस, आपकी यात्रा</h1>
+    <p class="muted">लॉगिन करें, अपना वास्तविक रूट सेव करें और यात्रा के दौरान GPS शेयर करें।</p>
+    <div class="status">📍 GPS आपकी अनुमति से ही इस्तेमाल होगा।</div>
+    <button class="btn" id="startBtn">Driver App खोलें</button>
+  </section>
+
+  <section id="authSection" class="card hidden">
+    <h2 id="authTitle">Driver Login</h2>
+    <p class="muted">अपना अकाउंट खोलें या नया अकाउंट बनाएँ।</p>
+    <div id="signupFields" class="hidden">
+      <label for="driverName">ड्राइवर का नाम</label>
+      <input id="driverName" autocomplete="name" placeholder="पूरा नाम">
+      <label for="mobile">मोबाइल नंबर</label>
+      <input id="mobile" inputmode="tel" autocomplete="tel" placeholder="मोबाइल नंबर">
+      <label for="regNo">बस का रजिस्ट्रेशन नंबर</label>
+      <input id="regNo" placeholder="जैसे JH06AB1234">
+    </div>
+    <label for="email">ईमेल</label>
+    <input id="email" type="email" autocomplete="email" placeholder="name@example.com">
+    <label for="password">पासवर्ड</label>
+    <input id="password" type="password" autocomplete="current-password" placeholder="कम-से-कम 6 अक्षर">
+    <div class="actions">
+      <button class="btn" id="authBtn">लॉगिन करें</button>
+      <button class="btn secondary" id="switchAuth">नया अकाउंट बनाएँ</button>
+    </div>
+  </section>
+
+  <section id="dashboard" class="hidden">
+    <div class="card">
+      <p class="pill">DRIVER DASHBOARD</p>
+      <h1>नमस्ते, <span id="welcomeName">Driver</span> 👋</h1>
+      <div class="statgrid">
+        <div class="stat"><span class="muted">वाहन नंबर</span><strong id="vehicleLabel">--</strong></div>
+        <div class="stat"><span class="muted">यात्रा की स्थिति</span><strong id="tripLabel">बंद</strong></div>
+      </div>
+      <div class="actions"><button class="btn secondary" id="logoutBtn">लॉगआउट</button></div>
+    </div>
+
+    <div class="card">
+      <h2>📍 1. बस का रूट</h2>
+      <p class="muted">बस जिस रास्ते से जाती है, उसी क्रम में सभी स्टॉप दर्ज करें।</p>
+      <div class="grid">
+        <div><label for="routeFrom">कहाँ से</label><input id="routeFrom" placeholder="जैसे Chaibasa"></div>
+        <div><label for="routeTo">कहाँ तक</label><input id="routeTo" placeholder="जैसे Kumardungi"></div>
+      </div>
+      <label>बीच के स्टॉप, सही क्रम में</label>
+      <div id="stopsList"></div>
+      <div class="actions"><button class="btn secondary" id="addStopBtn">+ स्टॉप जोड़ें</button></div>
+      <label for="routeViaNotes">रूट / सड़क की अतिरिक्त जानकारी</label>
+      <textarea id="routeViaNotes" placeholder="सड़क या रूट की जानकारी (वैकल्पिक)"></textarea>
+      
+<div class="timing-card">
+  <div class="timing-heading">🕒 बस का टाइम-टेबल</div>
+
+  <div class="timing-grid">
+    <div class="timing-box">
+      <label for="departureTime">🚌 बस छूटने का समय</label>
+      <input type="time" id="departureTime" required>
+    </div>
+
+    <div class="timing-box">
+      <label for="arrivalTime">🏁 Destination पहुँचने का समय</label>
+      <input type="time" id="arrivalTime" required>
+    </div>
+  </div>
+
+  <p class="timing-note">
+    दोनों समय स्थानीय समय के अनुसार भरें। ये ड्राइवर द्वारा निर्धारित शेड्यूल हैं।
+  </p>
+</div>
+
+      <div id="routeStatus" class="status">अभी रूट लोड नहीं हुआ।</div>
+      <button class="btn" id="saveRouteBtn">रूट सेव करें</button>
+      <p class="notice">यहाँ दर्ज किए गए नाम ड्राइवर द्वारा दिए गए स्टॉप हैं। GPS निर्देशांक और सड़क की पुष्टि अलग से करनी होगी।</p>
+    </div>
+
+    <div class="card">
+      <h2>🟢 2. यात्रा चालू / बंद</h2>
+      <div id="tripStatus" class="status">यात्रा बंद है।</div>
+      <div class="actions">
+        <button class="btn" id="tripOnBtn">यात्रा चालू करें</button>
+        <button class="btn danger" id="tripOffBtn">यात्रा बंद करें</button>
+      </div>
+      <p class="notice">GPS के लिए HTTPS और Location Permission जरूरी हैं। ब्राउज़र बंद होने पर GPS अपडेट रुक सकता है।</p>
+    </div>
+
+    <div class="card">
+      <h2>📡 3. वास्तविक GPS</h2>
+      <div class="statgrid">
+        <div class="stat"><span class="muted">Latitude</span><strong id="latLabel">--</strong></div>
+        <div class="stat"><span class="muted">Longitude</span><strong id="lngLabel">--</strong></div>
+        <div class="stat"><span class="muted">GPS सटीकता</span><strong id="accuracyLabel">--</strong></div>
+        <div class="stat"><span class="muted">आखिरी अपडेट</span><strong id="updatedLabel">--</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⛔ 4. बस रुकने की जानकारी</h2>
+      <label for="stopReason">रुकने का कारण</label>
+      <select id="stopReason">
+        <option value="">कारण चुनें</option>
+        <option>यात्री चढ़ाना / उतारना</option>
+        <option>ट्रैफिक / जाम</option>
+        <option>तकनीकी खराबी</option>
+        <option>ईंधन भरवाना</option>
+        <option>खाना / आराम</option>
+        <option>सड़क बंद / खराब सड़क</option>
+        <option>अन्य कारण</option>
+      </select>
+      <label for="stopDetails">अतिरिक्त जानकारी</label>
+      <textarea id="stopDetails" placeholder="वैकल्पिक जानकारी"></textarea>
+      <div class="actions">
+        <button class="btn blue" id="saveStopBtn">रुकने की जानकारी सेव करें</button>
+        <button class="btn secondary" id="clearStopBtn">रुकना समाप्त</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔄 5. दूसरी बस से सेवा</h2>
+      <label for="subReg">दूसरी बस का रजिस्ट्रेशन नंबर</label>
+      <input id="subReg" placeholder="जैसे JH06AB1234">
+      <label for="subDriver">दूसरे ड्राइवर का नाम (वैकल्पिक)</label>
+      <input id="subDriver" placeholder="नाम">
+      <p class="notice">दूसरे ड्राइवर का मोबाइल इस सार्वजनिक रिकॉर्ड में नहीं रखा जाता।</p>
+      <div class="actions">
+        <button class="btn blue" id="saveSubBtn">दूसरी बस सेव करें</button>
+        <button class="btn secondary" id="clearSubBtn">जानकारी हटाएँ</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>Where Is My Bus · Driver App</footer>
+<div id="toast" class="hidden" role="status"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, createUserWithEmailAndPassword,
+  signInWithEmailAndPassword, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getDatabase, ref, set, get, update, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* आपका दिया हुआ Firebase config, बिना बदलाव */
+const firebaseConfig = {
+  apiKey: "AIzaSyDRIHkXfRrM9DQmJBalqgzdrRekv4F0Wio",
+  authDomain: "system-ui-plugin.firebaseapp.com",
+  databaseURL: "https://system-ui-plugin-default-rtdb.firebaseio.com",
+  projectId: "system-ui-plugin",
+  storageBucket: "system-ui-plugin.firebasestorage.app",
+  messagingSenderId: "650354923514",
+  appId: "1:650354923514:web:34648e5074551e0e537643",
+  measurementId: "G-ZWLCTNF8YR"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+const $ = id => document.getElementById(id);
+let currentUser = null;
+let driverProfile = {};
+let savedRoute = null;
+let stops = [];
+let isSignup = false;
+let tripActive = false;
+let watchId = null;
+let lastPosition = null;
+let toastTimer;
+
+function toast(message) {
+  const el = $("toast");
+  el.textContent = message;
+  el.classList.remove("hidden");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add("hidden"), 4000);
+}
+function showOnly(id) {
+  ["splash","authSection","dashboard"].forEach(x => $(x).classList.add("hidden"));
+  if (id) $(id).classList.remove("hidden");
+}
+function profileRef(uid=currentUser.uid) { return ref(db, `drivers/${uid}`); }
+function routeRef(uid=currentUser.uid) { return ref(db, `publicRoutes/${uid}`); }
+function liveRef(uid=currentUser.uid) { return ref(db, `liveBuses/${uid}`); }
+function regFormat(v) { return v.trim().toUpperCase(); }
+
+function explainError(e) {
+  const c = e?.code || "";
+  const known = {
+    "auth/api-key-not-valid":"Firebase API Key स्वीकार नहीं हुई। Console से Web App config दोबारा कॉपी करें और API key restrictions जाँचें।",
+    "auth/operation-not-allowed":"Firebase Authentication में Email/Password चालू करें।",
+    "auth/invalid-email":"ईमेल सही दर्ज करें।",
+    "auth/email-already-in-use":"इस ईमेल से अकाउंट पहले से बना है। लॉगिन करें।",
+    "auth/invalid-credential":"ईमेल या पासवर्ड गलत है।",
+    "auth/weak-password":"पासवर्ड कम-से-कम 6 अक्षर का रखें।",
+    "auth/network-request-failed":"इंटरनेट कनेक्शन जाँचें।",
+    "permission-denied":"Realtime Database Rules में अनुमति नहीं है।",
+    "PERMISSION_DENIED":"Realtime Database Rules में अनुमति नहीं है।"
+  };
+  if (known[c]) return known[c];
+  if (e?.message?.includes("PERMISSION_DENIED")) return known["PERMISSION_DENIED"];
+  return `${c ? c + ": " : ""}${e?.message || "अज्ञात Firebase error"}`;
+}
+
+$("startBtn").onclick = () => showOnly(currentUser ? "dashboard" : "authSection");
+
+$("switchAuth").onclick = () => {
+  isSignup = !isSignup;
+  $("signupFields").classList.toggle("hidden", !isSignup);
+  $("authTitle").textContent = isSignup ? "Driver Signup" : "Driver Login";
+  $("authBtn").textContent = isSignup ? "अकाउंट बनाएँ" : "लॉगिन करें";
+  $("switchAuth").textContent = isSignup ? "लॉगिन करें" : "नया अकाउंट बनाएँ";
+};
+
+$("authBtn").onclick = async () => {
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  if (!email || !password) return toast("ईमेल और पासवर्ड भरें।");
+  if (password.length < 6) return toast("पासवर्ड कम-से-कम 6 अक्षर का होना चाहिए।");
+
+  $("authBtn").disabled = true;
+  try {
+    if (isSignup) {
+      const name = $("driverName").value.trim();
+      const mobile = $("mobile").value.trim();
+      const vehicleReg = regFormat($("regNo").value);
+      if (!name || !mobile || !vehicleReg) throw new Error("नाम, मोबाइल और बस नंबर भरें।");
+      if (!/^[0-9+\-\s]{10,16}$/.test(mobile)) throw new Error("मोबाइल नंबर सही दर्ज करें।");
+
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const profile = {
+        uid:result.user.uid, name, mobile, email, vehicleReg,
+        createdAt:Date.now()
+      };
+      await set(profileRef(result.user.uid), profile);
+      toast("अकाउंट बन गया!");
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast("लॉगिन सफल!");
+    }
+  } catch(e) {
+    toast(explainError(e));
+  } finally {
+    $("authBtn").disabled = false;
+  }
+};
+
+onAuthStateChanged(auth, async user => {
+  stopGpsWatch();
+  currentUser = user;
+  savedRoute = null;
+  tripActive = false;
+
+  if (!user) {
+    $("headerState").textContent = "Driver App";
+    showOnly("splash");
+    return;
+  }
+  try {
+    const snap = await get(profileRef(user.uid));
+    driverProfile = snap.exists() ? snap.val() : {email:user.email || ""};
+    $("welcomeName").textContent = driverProfile.name || user.email || "Driver";
+    $("vehicleLabel").textContent = driverProfile.vehicleReg || "नहीं मिला";
+    $("headerState").textContent = "लॉगिन है";
+    await loadRoute();
+    await loadTrip();
+    showOnly("dashboard");
+  } catch(e) {
+    toast(explainError(e));
+    showOnly("dashboard");
+  }
+});
+
+$("logoutBtn").onclick = async () => {
+  if (tripActive && !confirm("यात्रा चालू है। लॉगआउट करने से GPS अपडेट बंद हो जाएगा। जारी रखें?")) return;
+  await stopTrip(false);
+  await signOut(auth);
+};
+
+function renderStops() {
+  const list = $("stopsList");
+  list.replaceChildren();
+  stops.forEach((value,i) => {
+    const row = document.createElement("div");
+    row.className = "stop-item";
+    const input = document.createElement("input");
+    input.placeholder = `स्टॉप ${i+1} का नाम`;
+    input.setAttribute("aria-label", `स्टॉप ${i+1}`);
+    input.value = value;
+    input.addEventListener("input", () => stops[i] = input.value);
+    row.appendChild(input);
+
+    [["↑","ऊपर करें",()=>moveStop(i,-1)],
+     ["↓","नीचे करें",()=>moveStop(i,1)],
+     ["×","हटाएँ",()=>{stops.splice(i,1);renderStops();}]
+    ].forEach(([label,title,action]) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = label; b.title = title;
+      b.setAttribute("aria-label",title);
+      b.onclick = action; row.appendChild(b);
+    });
+    list.appendChild(row);
+  });
+}
+function moveStop(i,delta) {
+  const j=i+delta;
+  if(j<0 || j>=stops.length) return;
+  [stops[i],stops[j]]=[stops[j],stops[i]];
+  renderStops();
+}
+$("addStopBtn").onclick = () => { stops.push(""); renderStops(); };
+
+async function loadRoute() {
+  const snap = await get(routeRef());
+  if(!snap.exists()) {
+    $("routeStatus").textContent = "अभी रूट सेव नहीं है।";
+    stops=[]; renderStops(); return;
+  }
+  savedRoute = snap.val();
+  $("routeFrom").value = savedRoute.from || "";
+  $("routeTo").value = savedRoute.to || "";
+  $("routeViaNotes").value = savedRoute.notes || "";
+  $("departureTime").value = savedRoute.departureTime || "";
+$("arrivalTime").value = savedRoute.arrivalTime || "";
+  stops = Array.isArray(savedRoute.stops) ? [...savedRoute.stops] : [];
+  renderStops();
+  $("routeStatus").textContent = `सेव रूट: ${savedRoute.from} → ${savedRoute.to}`;
+}
+
+$("saveRouteBtn").onclick = async () => {
+  if(!currentUser) return;
+  if(tripActive) return toast("रूट बदलने से पहले यात्रा बंद करें।");
+  const from = $("routeFrom").value.trim();
+  const to = $("routeTo").value.trim();
+  if(!from || !to) return toast("शुरुआती और अंतिम स्थान दर्ज करें।");
+  const departureTime = $("departureTime").value;
+const arrivalTime = $("arrivalTime").value;
+
+if(!departureTime || !arrivalTime)
+  return toast("बस छूटने और पहुँचने का समय दोनों भरें।");
+  if(from.toLowerCase()===to.toLowerCase()) return toast("शुरुआती और अंतिम स्थान अलग रखें।");
+
+  const route = {
+    driverUid:currentUser.uid,
+    vehicleReg:driverProfile.vehicleReg || "",
+    from,to,
+    
+stops:stops.map(s=>s.trim()).filter(Boolean),
+notes:$("routeViaNotes").value.trim(),
+departureTime,
+arrivalTime,
+updatedAt:Date.now()
+
+  };
+  try {
+    await set(routeRef(),route);
+    savedRoute=route;
+    $("routeStatus").textContent=`सेव रूट: ${from} → ${to}`;
+    toast("रूट Firebase में सेव हो गया।");
+  } catch(e) { toast(explainError(e)); }
+};
+
+async function loadTrip() {
+  const snap=await get(liveRef());
+  const data=snap.exists()?snap.val():null;
+  tripActive=Boolean(data?.active);
+  if(data?.position) showPosition(data.position);
+  updateTripUI();
+  if(tripActive) startGpsWatch();
+}
+function updateTripUI() {
+  $("tripLabel").textContent=tripActive?"यात्रा चालू":"बंद";
+  $("tripStatus").textContent=tripActive
+    ?"🟢 यात्रा चालू है। GPS अनुमति मिलने पर लोकेशन अपडेट होगी।"
+    :"यात्रा बंद है।";
+  $("tripOnBtn").disabled=tripActive;
+  $("tripOffBtn").disabled=!tripActive;
+  $("headerState").textContent=tripActive?"यात्रा चालू":"लॉगिन है";
+}
+
+$("tripOnBtn").onclick = async () => {
+  if(!currentUser) return toast("पहले लॉगिन करें।");
+  if(!savedRoute) return toast("पहले रूट सेव करें।");
+  if(!navigator.geolocation) return toast("इस ब्राउज़र में GPS उपलब्ध नहीं है।");
+  if(!window.isSecureContext) return toast("GPS के लिए HTTPS वेबसाइट खोलें।");
+  
+  try {
+    tripActive=true;
+    await update(liveRef(),{
+      active:true,driverUid:currentUser.uid,
+      vehicleReg:driverProfile.vehicleReg || "",
+      routeFrom:savedRoute.from,routeTo:savedRoute.to,
+      routeStops:savedRoute.stops || [],
+      departureTime:savedRoute.departureTime || "",
+      arrivalTime:savedRoute.arrivalTime || "",
+      position:lastPosition,
+      startedAt:Date.now(),updatedAt:Date.now(),stopInfo:null
+    });
+    updateTripUI();
+    startGpsWatch();
+    toast("यात्रा चालू हुई। GPS permission स्वीकार करें।");
+  } catch(e) {
+    tripActive=false;updateTripUI();toast(explainError(e));
+  }
+  
+};
+
+$("tripOffBtn").onclick = () => stopTrip(true);
+
+async function stopTrip(showMessage) {
+  stopGpsWatch();
+  if(!currentUser) return;
+  try {
+    tripActive=false;
+    await update(liveRef(),{active:false,endedAt:Date.now(),updatedAt:Date.now()});
+    updateTripUI();
+    if(showMessage) toast("यात्रा बंद कर दी गई।");
+  } catch(e) {
+    updateTripUI();
+    if(showMessage) toast(explainError(e));
+  }
+}
+
+function startGpsWatch() {
+  if(!currentUser || !tripActive || watchId!==null) return;
+  watchId=navigator.geolocation.watchPosition(async pos => {
+    if(!tripActive || !currentUser) return;
+    const p={
+      latitude:pos.coords.latitude,
+      longitude:pos.coords.longitude,
+      accuracy:pos.coords.accuracy,
+      speed:pos.coords.speed,
+      heading:pos.coords.heading,
+      capturedAt:Date.now()
+    };
+    lastPosition=p;
+    showPosition(p);
+    try {
+      await update(liveRef(),{
+        active:true,driverUid:currentUser.uid,
+        vehicleReg:driverProfile.vehicleReg || "",
+        routeFrom:savedRoute?.from || "",
+        routeTo:savedRoute?.to || "",
+        routeStops:savedRoute?.stops || [],
+        departureTime:savedRoute?.departureTime || "",
+        arrivalTime:savedRoute?.arrivalTime || "",
+        position:p,updatedAt:Date.now()
+      });
+    } catch(e) { toast(explainError(e)); }
+  },err => {
+    const messages={
+      1:"Location Permission अस्वीकार हुई। Browser settings में अनुमति दें।",
+      2:"GPS उपलब्ध नहीं है। फोन की Location चालू करें।",
+      3:"GPS को जवाब देने में देर हुई। दोबारा प्रयास करें।"
+    };
+    $("tripStatus").textContent=messages[err.code] || "GPS में समस्या आई।";
+    toast(messages[err.code] || "GPS में समस्या आई।");
+  },{enableHighAccuracy:true,maximumAge:3000,timeout:20000});
+}
+function stopGpsWatch() {
+  if(watchId!==null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+  watchId=null;
+}
+function showPosition(p) {
+  if(!p) return;
+  $("latLabel").textContent=Number(p.latitude).toFixed(6);
+  $("lngLabel").textContent=Number(p.longitude).toFixed(6);
+  $("accuracyLabel").textContent=p.accuracy!=null?`${Math.round(p.accuracy)} मीटर`:"--";
+  $("updatedLabel").textContent=p.capturedAt?new Date(p.capturedAt).toLocaleTimeString("hi-IN"):"--";
+}
+
+$("saveStopBtn").onclick = async () => {
+  const reason=$("stopReason").value;
+  if(!reason) return toast("रुकने का कारण चुनें।");
+  try {
+    await update(liveRef(),{
+      stopInfo:{active:true,reason,details:$("stopDetails").value.trim(),reportedAt:Date.now()},
+      updatedAt:Date.now()
+    });
+    toast("रुकने की जानकारी सेव हो गई।");
+  } catch(e) { toast(explainError(e)); }
+};
+$("clearStopBtn").onclick = async () => {
+  try {
+    await update(liveRef(),{stopInfo:null,updatedAt:Date.now()});
+    $("stopReason").value="";$("stopDetails").value="";
+    toast("रुकने की स्थिति हटा दी गई।");
+  } catch(e) { toast(explainError(e)); }
+};
+
+$("saveSubBtn").onclick = async () => {
+  const vehicleReg=regFormat($("subReg").value);
+  if(!vehicleReg) return toast("दूसरी बस का रजिस्ट्रेशन नंबर दर्ज करें।");
+  try {
+    await update(liveRef(),{
+      substitute:{
+        active:true,vehicleReg,
+        driverName:$("subDriver").value.trim(),
+        updatedAt:Date.now()
+      },
+      updatedAt:Date.now()
+    });
+    toast("दूसरी बस की जानकारी सेव हो गई।");
+  } catch(e) { toast(explainError(e)); }
+};
+$("clearSubBtn").onclick = async () => {
+  try {
+    await update(liveRef(),{substitute:null,updatedAt:Date.now()});
+    $("subReg").value="";$("subDriver").value="";
+    toast("दूसरी बस की जानकारी हटा दी गई।");
+  } catch(e) { toast(explainError(e)); }
+};
+
+renderStops();
+</script>
+</body>
+</html>
